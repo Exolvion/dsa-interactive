@@ -33,7 +33,7 @@ window.App = (function () {
     window.location.hash = '#/' + lecId + '/' + secId;
   }
 
-  let sidebarEl, mainEl, themeBtn;
+  let sidebarEl, mainEl, themeBtn, quizBtn, diagramBtn;
 
   function buildSidebar() {
     const nav = V.el('div', { class: 'sidebar-nav' });
@@ -75,6 +75,32 @@ window.App = (function () {
     document.querySelectorAll('.nav-section-link').forEach(function (a) {
       a.classList.toggle('active', a.dataset.lec === lecId && a.dataset.sec === secId);
     });
+    if (quizBtn) quizBtn.classList.remove('active');
+    if (diagramBtn) diagramBtn.classList.remove('active');
+  }
+
+  function renderQuiz() {
+    V.clear(mainEl);
+    const inner = V.el('div', { class: 'main-inner' });
+    mainEl.appendChild(inner);
+    window.Quiz.mount(inner);
+    mainEl.scrollTop = 0;
+    document.querySelectorAll('.nav-lecture').forEach(function (g) { g.classList.remove('open'); });
+    document.querySelectorAll('.nav-section-link').forEach(function (a) { a.classList.remove('active'); });
+    if (diagramBtn) diagramBtn.classList.remove('active');
+    if (quizBtn) quizBtn.classList.add('active');
+  }
+
+  function renderDiagramQuiz() {
+    V.clear(mainEl);
+    const inner = V.el('div', { class: 'main-inner' });
+    mainEl.appendChild(inner);
+    window.DiagramQuiz.mount(inner);
+    mainEl.scrollTop = 0;
+    document.querySelectorAll('.nav-lecture').forEach(function (g) { g.classList.remove('open'); });
+    document.querySelectorAll('.nav-section-link').forEach(function (a) { a.classList.remove('active'); });
+    if (quizBtn) quizBtn.classList.remove('active');
+    if (diagramBtn) diagramBtn.classList.add('active');
   }
 
   function renderSection(lec, sec) {
@@ -129,6 +155,9 @@ window.App = (function () {
   }
 
   function route() {
+    const hash = (window.location.hash || '').replace(/^#\/?/, '');
+    if (hash === 'quiz' || hash.indexOf('quiz/') === 0) { renderQuiz(); return; }
+    if (hash === 'diagram' || hash.indexOf('diagram/') === 0) { renderDiagramQuiz(); return; }
     let found = findByHash(window.location.hash);
     if (!found && lectures.length) found = { lec: lectures[0], sec: lectures[0].sections[0] };
     if (!found) return;
@@ -151,17 +180,34 @@ window.App = (function () {
   function init() {
     document.body.innerHTML = '';
     const toggleBtn = V.el('button', { class: 'sidebar-toggle' }, '☰ Menu');
+    quizBtn = V.el('button', { class: 'nav-toplevel-btn' }, [
+      V.el('span', { class: 'nav-toplevel-icon' }, '📝'),
+      V.el('span', {}, 'MCQ Practice')
+    ]);
+    diagramBtn = V.el('button', { class: 'nav-toplevel-btn' }, [
+      V.el('span', { class: 'nav-toplevel-icon' }, '🖱️'),
+      V.el('span', {}, 'Diagram Practice')
+    ]);
     sidebarEl = V.el('div', { class: 'sidebar' }, [
       V.el('div', { class: 'sidebar-header' }, [
         V.el('p', { class: 'brand' }, 'DSA Interactive'),
         V.el('p', { class: 'brand-sub' }, 'INF1008 · Lectures 6–10')
       ]),
+      V.el('div', { class: 'nav-toplevel' }, [quizBtn, diagramBtn]),
       V.el('div', { class: 'sidebar-footer' }, (themeBtn = V.el('button', { class: 'theme-toggle' }, '🌓 Toggle theme')))
     ]);
     mainEl = V.el('div', { class: 'main' });
     document.body.appendChild(V.el('div', { class: 'app-shell' }, [toggleBtn, sidebarEl, mainEl]));
 
     toggleBtn.addEventListener('click', function () { sidebarEl.classList.toggle('open'); });
+    quizBtn.addEventListener('click', function () {
+      window.location.hash = '#/quiz';
+      if (window.innerWidth <= 860) sidebarEl.classList.remove('open');
+    });
+    diagramBtn.addEventListener('click', function () {
+      window.location.hash = '#/diagram';
+      if (window.innerWidth <= 860) sidebarEl.classList.remove('open');
+    });
 
     buildSidebar();
     initTheme();
